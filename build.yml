@@ -1,0 +1,43 @@
+name: Build FovPlus QMOD
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          add-to-path: true
+
+      - name: Install Ninja & CMake
+        run: sudo apt-get update && sudo apt-get install -y ninja-build cmake
+
+      - name: Install QPM
+        run: |
+          wget -q https://github.com/QuestPackageManager/QPM.CLI/releases/latest/download/qpm-linux -O /usr/local/bin/qpm
+          chmod +x /usr/local/bin/qpm
+
+      - name: Restore QPM dependencies
+        run: qpm restore
+
+      - name: Build QMOD
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: qpm s qmod
+
+      - name: Upload FovPlus.qmod
+        uses: actions/upload-artifact@v4
+        with:
+          name: FovPlus-qmod
+          path: FovPlus.qmod
